@@ -14,12 +14,24 @@ namespace Grams
                     return;
 
                 var parser = new Parser(line);
-                var expression = parser.Parse();
+                var syntaxTree = parser.Parse();
 
                 var color = Console.ForegroundColor;
                 Console.ForegroundColor = ConsoleColor.DarkGray;
-                PrettyPrint(expression);
-                Console.ForegroundColor = color;                    
+                PrettyPrint(syntaxTree.Root);
+                Console.ForegroundColor = color;       
+                
+                if (syntaxTree.Diagnostics.Any())
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkRed;
+
+                    foreach (var diagnostic in syntaxTree.Diagnostics)
+                    {
+                        Console.WriteLine(diagnostic);
+                    }
+             
+                    Console.ForegroundColor = color;
+                }
             }
         }
 
@@ -92,11 +104,14 @@ namespace Grams
     {
         private readonly string _text;
         private int _position;
+        private List<string> _diagnostics = new List<string>();
 
         public Lexer(string text)
         {
             _text = text;
         }
+
+        public IEnumerable<string> Diagnostics => _diagnostics;
 
         private char Current
         {
@@ -162,6 +177,7 @@ namespace Grams
             else if (Current == ')')
                 return new SyntaxToken(SyntaxKind.ClosedParenthesisToken, _position++, ")", null);
 
+            _diagnostics.Add($"ERROR: bad character input: '{Current}'");
             return new SyntaxToken(SyntaxKind.BadToken, _position++, _text.Substring(_position - 1, 1), null);
 
         }
@@ -217,10 +233,25 @@ namespace Grams
         }
     }
 
+    sealed class SyntaxTree
+    {
+        public SyntaxTree(IEnumerable<string> diagnostics, ExpressionSyntax root, SyntaxToken endOfFileToken)
+        {
+            Diagnostics = diagnostics.ToArray();
+            Root = root;
+            EndOfFileToken = endOfFileToken;
+        }
+
+        public IReadOnlyList<string> Diagnostics { get; }
+        public ExpressionSyntax Root { get; }
+        public SyntaxToken EndOfFileToken { get; }
+    }
+
     class Parser
     {
         private readonly SyntaxToken[] _tokens;
         private int _position;
+        private List<string> _diagnostics = new List<string> ();
           
         public Parser(string text)
         {
@@ -241,6 +272,7 @@ namespace Grams
             } while (token.Kind != SyntaxKind.EndOfFileToken);
 
             _tokens = tokens.ToArray();
+            _diagnostics.AddRange(lexer.Diagnostics);
 
         }
 
@@ -253,6 +285,7 @@ namespace Grams
             return _tokens[index];
         }
 
+        public IEnumerable<string> Diagnostics => _diagnostics;
         private SyntaxToken Current => Peek(0);
 
         private SyntaxToken NextToken()
@@ -267,10 +300,19 @@ namespace Grams
             if (Current.Kind == kind)
                 return NextToken();
 
+            _diagnostics.Add($"ERROR: unexpected token <{Current.Kind}>, expected <{kind}>");
+
             return new SyntaxToken(kind, Current.Position, null, null);
         }
 
-        public ExpressionSyntax Parse()
+        public SyntaxTree Parse()
+        {
+            var expression = ParseExpression();
+            var endOfFileToken = Match(SyntaxKind.EndOfFileToken);
+            return new SyntaxTree(_diagnostics, expression, endOfFileToken);
+        }
+
+        private ExpressionSyntax ParseExpression()
         {
             var left = ParsePrimaryExpression();
 
