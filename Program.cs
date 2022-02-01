@@ -6,6 +6,8 @@ namespace Grams
     {
         static void Main(string[] args)
         {
+            bool showTree = false;
+
             while (true)
             {
                 Console.Write("> ");
@@ -13,13 +15,28 @@ namespace Grams
                 if (string.IsNullOrWhiteSpace(line))
                     return;
 
-                var parser = new Parser(line);
-                var syntaxTree = parser.Parse();
+                if (line == "#showTree")
+                {
+                    showTree = !showTree;
+                    Console.WriteLine(showTree ? "Showing Parse Trees..." : "Not Showing Parse Trees...");
+                    continue;
+                }
 
-                var color = Console.ForegroundColor;
-                Console.ForegroundColor = ConsoleColor.DarkGray;
-                PrettyPrint(syntaxTree.Root);
-                Console.ForegroundColor = color;
+                else if(line == "#cls")
+                {
+                    Console.Clear();
+                    continue;
+                }
+
+                var syntaxTree = SyntaxTree.Parse(line);
+
+                if (showTree)
+                {
+                    var color = Console.ForegroundColor;
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                    PrettyPrint(syntaxTree.Root);
+                    Console.ForegroundColor = color;
+                }              
 
                 if (!syntaxTree.Diagnostics.Any())
                 {
@@ -29,6 +46,7 @@ namespace Grams
                 }
                 else
                 {
+                    var color = Console.ForegroundColor;
                     Console.ForegroundColor = ConsoleColor.DarkRed;
 
                     foreach (var diagnostic in syntaxTree.Diagnostics)                    
@@ -274,6 +292,12 @@ namespace Grams
         public IReadOnlyList<string> Diagnostics { get; }
         public ExpressionSyntax Root { get; }
         public SyntaxToken EndOfFileToken { get; }
+
+        public static SyntaxTree Parse(string text)
+        {
+            var parser = new Parser(text);
+            return parser.Parse();
+        }
     }
 
     class Parser
