@@ -19,17 +19,21 @@ namespace Grams
                 var color = Console.ForegroundColor;
                 Console.ForegroundColor = ConsoleColor.DarkGray;
                 PrettyPrint(syntaxTree.Root);
-                Console.ForegroundColor = color;       
-                
-                if (syntaxTree.Diagnostics.Any())
+                Console.ForegroundColor = color;
+
+                if (!syntaxTree.Diagnostics.Any())
+                {
+                    var e = new Evaluator(syntaxTree.Root);
+                    var result = e.Evaluate();
+                    Console.WriteLine(result);
+                }
+                else
                 {
                     Console.ForegroundColor = ConsoleColor.DarkRed;
 
-                    foreach (var diagnostic in syntaxTree.Diagnostics)
-                    {
-                        Console.WriteLine(diagnostic);
-                    }
-             
+                    foreach (var diagnostic in syntaxTree.Diagnostics)                    
+                        Console.WriteLine(diagnostic);                    
+
                     Console.ForegroundColor = color;
                 }
             }
@@ -148,7 +152,9 @@ namespace Grams
 
                 var length = _position - start;
                 var text = _text.Substring(start, length);
-                int.TryParse(text, out var value);
+                if (!int.TryParse(text, out var value))                
+                    _diagnostics.Add($"The number {_text} isn't valid Int32.");
+                
                 return new SyntaxToken(SyntaxKind.NumberToken, start, text, value);
             }
 
@@ -317,7 +323,9 @@ namespace Grams
             var left = ParsePrimaryExpression();
 
             while (Current.Kind == SyntaxKind.PlusToken ||
-                Current.Kind == SyntaxKind.MinusToken)
+                Current.Kind == SyntaxKind.MinusToken ||
+                Current.Kind == SyntaxKind.StarToken ||
+                Current.Kind == SyntaxKind.SlashToken)
             {
                 var operatorToken = NextToken();
                 var right = ParsePrimaryExpression();
@@ -334,4 +342,46 @@ namespace Grams
         }
     }
 
+
+    class Evaluator
+    {
+        private readonly ExpressionSyntax _root;
+        public Evaluator(ExpressionSyntax _root)
+        {
+           this._root = _root;
+        }
+
+        public ExpressionSyntax Root { get; }
+
+        public int Evaluate()
+        {
+            return EvaluateExpression(_root);
+        }
+
+        private int EvaluateExpression(ExpressionSyntax node)
+        {
+            if (node is NumberExpressionSyntax n)            
+                return (int) n.NumberToken.Value;
+            
+            if (node is BinaryExpressionSyntax b)
+            {
+                var left = EvaluateExpression(b.Left);
+                var right = EvaluateExpression(b.Right);
+
+                if (b.OperatorToken.Kind == SyntaxKind.PlusToken)
+                    return left + right;
+                else if (b.OperatorToken.Kind == SyntaxKind.MinusToken)
+                    return left - right;
+                else if (b.OperatorToken.Kind == SyntaxKind.StarToken)
+                    return left * right;
+                else if (b.OperatorToken.Kind == SyntaxKind.SlashToken)
+                    return left / right;
+                else
+                    throw new Exception($"Unexpected Binary Operator {b.OperatorToken.Kind}");
+            }
+
+            throw new Exception($"Unexpected node {node.Kind}");
+
+        }
+    }
 }
