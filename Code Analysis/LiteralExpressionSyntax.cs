@@ -7,7 +7,7 @@
             this.literalToken = literalToken;
         }
 
-        public override SyntaxKind Kind => SyntaxKind.NumberExpression;
+        public override SyntaxKind Kind => SyntaxKind.LiteralExpression;
         public SyntaxToken literalToken { get; }
 
         public override IEnumerable<SyntaxNode> GetChildren()
