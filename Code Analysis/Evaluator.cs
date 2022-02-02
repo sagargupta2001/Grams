@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Grams.Code_Analysis
 {
-    class Evaluator
+    public sealed class Evaluator
     {
         private readonly ExpressionSyntax _root;
         public Evaluator(ExpressionSyntax _root)
@@ -21,8 +21,8 @@ namespace Grams.Code_Analysis
 
         private int EvaluateExpression(ExpressionSyntax node)
         {
-            if (node is NumberExpressionSyntax n)
-                return (int)n.NumberToken.Value;
+            if (node is LiteralExpressionSyntax n)
+                return (int)n.literalToken.Value;
 
             if (node is BinaryExpressionSyntax b)
             {

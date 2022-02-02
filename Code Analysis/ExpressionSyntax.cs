@@ -1,6 +1,6 @@
 ﻿namespace Grams.Code_Analysis
 {
-    abstract class ExpressionSyntax : SyntaxNode
+    public abstract class ExpressionSyntax : SyntaxNode
     {
 
     }

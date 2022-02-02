@@ -1,6 +1,6 @@
 ﻿namespace Grams.Code_Analysis
 {
-    abstract class SyntaxNode
+    public abstract class SyntaxNode
     {
         public abstract SyntaxKind Kind { get; }
 
