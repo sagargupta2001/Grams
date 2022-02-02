@@ -34,7 +34,6 @@ namespace Grams
                 var binder = new Binder();
                 var boundExpression = binder.BindExpression(syntaxTree.Root);
 
-
                 var diagnostics = syntaxTree.Diagnostics.Concat(binder.Diagnostics).ToArray();
 
                 if (showTree)
@@ -56,7 +55,7 @@ namespace Grams
                 {
                     Console.ForegroundColor = ConsoleColor.DarkRed;
 
-                    foreach (var diagnostic in syntaxTree.Diagnostics)                    
+                    foreach (var diagnostic in diagnostics)                    
                         Console.WriteLine(diagnostic);
 
                     Console.ResetColor();
